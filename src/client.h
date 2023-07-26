@@ -18,12 +18,11 @@ extern Public_key_users pub[512];
 extern int pubkey_count;
 
 void send_my_public_key(int client_socket);
-void receive_public_key(int client_socket, Package* pkg);
-int check_public_key(int client_socket, char* username);
+void receive_public_key(int client_socket, Package *pkg);
+int check_public_key(int client_socket, char *username);
 
-char* group_msg_encrypt(char* msg, char* key);
-char* group_msg_decrypt(char* msg, char* key);
-
+char *group_msg_encrypt(char *msg, char *key);
+char *group_msg_decrypt(char *msg, char *key);
 
 extern char my_username[USERNAME_SIZE];
 extern char curr_group_name[GROUP_NAME_SIZE];
@@ -34,7 +33,7 @@ extern int join_succ;
 /**
  * Create socket and connect to server
  * @return socket connected to server
-*/
+ */
 int connect_to_server();
 
 void login_menu();
@@ -57,9 +56,9 @@ void see_active_user(int client_socket);
 
 int private_chat(int client_socket, char *receiver, char *msg);
 
-void make_done(); 
+void make_done();
 
-int check_receiver(int client_socket, char* receiver);
+int check_receiver(int client_socket, char *receiver);
 
 void chat_all(int client_socket);
 

@@ -1,9 +1,12 @@
+#include "db.h"
+
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include "db.h"
+#include "config.h"
 
 #define MAX_SQL_SIZE 3072
 
@@ -79,3 +82,25 @@ void drop_table(int group_id)
     sqlite3_close(database);
 }
 
+static struct sqlite3 *db = NULL;
+static pthread_mutex_t lock;
+
+struct sqlite3 *db_get_instance()
+{
+    pthread_mutex_lock(&lock);
+    if (db)
+        goto out;
+
+    if (sqlite3_open(DB_PATH, &db) == SQLITE_OK)
+        goto out;
+
+    db = NULL;
+out:
+    pthread_mutex_unlock(&lock);
+    return db;
+}
+
+void db_close()
+{
+    sqlite3_close(db);
+}
