@@ -202,7 +202,7 @@ void sv_user_use(int conn_socket)
     int login = 1;
     while (login)
     {
-        if (recv(conn_socket, &pkg, sizeof(pkg), 0) > 0) // printf("Receive from %d\n", conn_socket);
+        if (recv(conn_socket, &pkg, sizeof(pkg), 0) > 0)
             printf("\n--------------\n%d chooses %d \n", conn_socket, pkg.ctrl_signal);
         switch (pkg.ctrl_signal)
         {
@@ -277,8 +277,6 @@ void sv_user_use(int conn_socket)
                     int user_id_group = sv_search_id_user_group(group[group_id], user[i].username);
                     if (user_id_group >= 0)
                     {
-                        // printf("1\n");
-                        // printf("%d %d\n", group_id, user_id_group);
                         // Reset socket ID of user until re-login
                         group[group_id].group_member[user_id_group].socket = 0;
                     }
@@ -503,7 +501,6 @@ void sv_show_group(int conn_socket, Package *pkg)
     strcpy(pkg->msg, group_list);
     send(conn_socket, pkg, sizeof(*pkg), 0);
 }
-// new group
 
 int check_user_in_group(Active_user user, int group_id)
 {
@@ -574,7 +571,6 @@ void sv_new_group(int conn_socket, Package *pkg)
     send(conn_socket, pkg, sizeof(*pkg), 0);
 }
 
-// join group
 int sv_search_id_group(Group group[], Active_user user, char *group_name)
 {
     int i;
@@ -686,7 +682,7 @@ void sv_group_chat(int conn_socket, Package *pkg)
     int i = 0;
     for (i = 0; i < MAX_USER; i++)
     {
-        if (group[group_id].group_member[i].socket > 0) // && group[group_id].group_member[i].socket != conn_socket)
+        if (group[group_id].group_member[i].socket > 0)
         {
             send(group[group_id].group_member[i].socket, pkg, sizeof(*pkg), 0);
         }
@@ -715,9 +711,6 @@ void sv_show_group_info(int conn_socket, Package *pkg)
     pkg->ctrl_signal = SHOW_GROUP_MEM_NUMBER;
     send(conn_socket, pkg, sizeof(*pkg), 0);
 
-    // strcpy(pkg->msg, "MEMBERS OF GROUP:");
-    // pkg->ctrl_signal = SHOW_GROUP_MEM_USERNAME;
-    // send(conn_socket, pkg, sizeof(*pkg), 0);
     for (int i = 0; i < MAX_USER; i++)
     {
         if (group[group_id].group_member[i].socket >= 0)
@@ -757,7 +750,7 @@ void sv_leave_group(int conn_socket, Package *pkg)
                 memset(pkg->sender, '\0', sizeof(pkg->sender));
                 strcpy(pkg->sender, SERVER_SYSTEM_USERNAME);
                 memset(pkg->msg, '\0', sizeof(pkg->msg));
-                sprintf(pkg->msg, "User \"%s\" has left the group and is no longer a member of it.", user[user_id].username);
+                sprintf(pkg->msg, "User \"%s\" has left the group.", user[user_id].username);
                 pkg->ctrl_signal = GROUP_CHAT;
                 sv_group_chat(conn_socket, pkg);
             }
