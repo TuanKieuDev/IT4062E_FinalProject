@@ -1,120 +1,65 @@
 /**
  * Account manager
-*/
+ */
 #include "account_manager.h"
-#include "error.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sqlite3.h>
 
+#include "config.h"
+#include "error.h"
 
-void write_to_file(Account *list) {
-
-    FILE *fp = fopen("../assets/account.txt", "w");
-
-    if (fp) {
-        Account *acc = list;
-        while (acc) {
-            fprintf(fp, "%s %s %d\n", acc->username, acc->password, acc->status);
-            acc = acc->next;
-        }
-
-        fclose(fp);
-    } else {
-        report_err(ERR_OPEN_FILE);
-        exit(0);
-    }
-}
+#include "db.h"
 
 /**
- * read data from txt file
- * Create a linked-list to store account
- * Return a pointer from first account
-*/
-Account* read_account_list() {
+ * Find an account with given username
+ * Returns pointer to dynamically allocated memory
+ */
+Account *account_find(char *username)
+{
+    Account *acc = NULL;
+    struct sqlite3 *db = db_get_instance();
+    const char *query = "SELECT username, password, is_signed_in FROM account "
+                        "WHERE username = ?";
+    struct sqlite3_stmt *stmt;
+    sqlite3_prepare_v2(db, query, -1, &stmt, NULL);
+    sqlite3_bind_text(stmt, 1, username, strlen(username), NULL);
 
-    FILE *fp = fopen("../assets/account.txt", "r");
-
-    Account *list = NULL;
-    Account *prev_acc, *acc;
-
-    char username[USERNAME_SIZE + 1];
-    char password[PASSWORD_SIZE + 1];
-    int status;
-
-    if (fp) {
-        while (!feof(fp)) {
-            // read data
-            fscanf(fp, "%s", username);
-            fscanf(fp, "%s", password);
-            fscanf(fp, "%d", &status);
-
-            // check empty line
-            if (strlen(username) == 0) {
-                continue;
-            }
-
-            // store value into memory
-            acc = (Account *) malloc(sizeof(Account));
-            strcpy(acc->username, username);
-            strcpy(acc->password, password);
-            acc->status = status;
-            acc->consecutive_failed_sign_in = 0;
-            acc->is_signed_in = 0;
-
-            // add to list
-            if (list == NULL) {
-                list = acc;
-                prev_acc = acc;
-            } else {
-                prev_acc->next = acc;
-                prev_acc = acc;
-            }
-
-            // reset value
-            strcpy(username, "");
-            strcpy(password, "");
-        }
-
-        fclose(fp);
-    } else {
-        report_err(ERR_OPEN_FILE);
-        exit(0);
+    if (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        acc = malloc(sizeof(Account));
+        strcpy(acc->username, (char *)sqlite3_column_text(stmt, 0));
+        strcpy(acc->password, (char *)sqlite3_column_text(stmt, 1));
+        acc->is_signed_in = sqlite3_column_int(stmt, 2);
     }
 
-    return list;
+out:
+    sqlite3_finalize(stmt);
+    return acc;
 }
 
+void account_login(const char *username)
+{
+    struct sqlite3 *db = db_get_instance();
+    const char *query = "UPDATE account SET is_signed_in = 1 WHERE username = ?";
+    struct sqlite3_stmt *stmt;
 
-/**
- * Search account
- * - Found: return account
- * - Not found: return NULL
-*/
-Account* find_account(Account *list, char *username) {
-
-    Account *acc = list;
-
-    while (acc) {
-        if (strcmp(acc->username, username) == 0) {
-            return acc;
-        }
-        acc = acc->next;
-    }
-
-    return NULL;
+    sqlite3_prepare_v2(db, query, -1, &stmt, NULL);
+    sqlite3_bind_text(stmt, 1, username, strlen(username), NULL);
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
 }
 
-/**
- * Check active users
- * - Active: return 1
- * - Lock: return 0
-*/
-int is_active_account(Account *list, char *username) {
-    Account *acc = find_account(list, username);
-    if (acc) {
-        return acc->status;
-    }
-    return 1;
+void account_logout(const char *username)
+{
+    struct sqlite3 *db = db_get_instance();
+    const char *query = "UPDATE account SET is_signed_in = 0 WHERE username = ?";
+    struct sqlite3_stmt *stmt;
+
+    sqlite3_prepare_v2(db, query, -1, &stmt, NULL);
+    sqlite3_bind_text(stmt, 1, username, strlen(username), NULL);
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
 }
